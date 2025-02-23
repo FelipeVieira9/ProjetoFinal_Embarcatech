@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'build/ghost_game.uf2'
+elf = 'build/ghost_game.elf'
