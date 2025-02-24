@@ -66,6 +66,7 @@ static volatile uint32_t fantasm_attack_delay;
 volatile int gameOn = 0;
 volatile int fantasm_attacked = 0; 
 volatile int playerAlive = 1;
+volatile int attack_animation = 0;
 
 // Funções
 void moveRight();
@@ -121,12 +122,14 @@ int main()
     gpio_set_dir(SW_PIN, GPIO_IN);
     gpio_pull_up(SW_PIN);
 
+    // Adicionado interrupções no botão A e no botão do joystick
     gpio_set_irq_enabled_with_callback(btn_A, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
     gpio_set_irq_enabled_with_callback(SW_PIN, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
 
     printf("\n\n\n\n\n\n\n\n\n\n\n");
     while (true) {
         if (gameOn) {
+            // Rotina para caso o jogador perca
             if (playerAlive == 0) {
                 printf("Voce perdeu\n");
                 ssd1306_fill(&ssd, !cor);
@@ -136,6 +139,7 @@ int main()
                 relative_position = 0;
                 gameOn = 0;
                 fantasmPoints = 0;
+                attack_animation = 0;
                 fantasm[0] = 120;
                 fantasm[1] = 205;
                 fantasm[2] = 280;
@@ -144,6 +148,7 @@ int main()
                 sleep_ms(2000);
             }
 
+            // Rotina para caso o jogador ganhe
             if (fantasmPoints == 5) {
                 printf("Voce ganhou\n");
                 ssd1306_fill(&ssd, !cor);
@@ -157,7 +162,11 @@ int main()
 
             ssd1306_fill(&ssd, !cor); // Limpa o display
 
-        ssd1306_rect(&ssd, 45, position, 8, 8, cor, cor); // Desenha um retângulo
+        if (attack_animation > 0) {
+            attack_animation--;
+        }
+
+        ssd1306_rect(&ssd, 45 - attack_animation, position - attack_animation / 2, 8 + attack_animation, 8 + attack_animation, cor, cor); // Desenha um retângulo
         ssd1306_rect(&ssd, 53, 0, 128, 11, cor, cor);
 
         for (int i = 0; i < 7; i++) { // Carregar cenário
@@ -171,6 +180,7 @@ int main()
                 ssd1306_rect(&ssd, 32, tree[i] - relative_position - 8  + control, 24, 8, cor, cor);
             }
         }
+
         ssd1306_draw_char(&ssd, (char)fantasmPoints + 48, 105, 5);
         ssd1306_draw_char(&ssd, '5', 115, 5);
         ssd1306_rect(&ssd, 3, 113, 1, 10, cor, cor);
@@ -195,6 +205,7 @@ int main()
                 continue;
             }
 
+            // Verificar a posição do fantasma e carregar a cor correspondente da distância na matriz de leds
             if (fantasm[i] - relative_position - position >= 0 && fantasm[i] - relative_position - position <= 15 && !fantasm_attacked) {
                 hasFantasm = 1;
                 if (fantasm[i] - relative_position - position == 0) {
@@ -217,16 +228,31 @@ int main()
             }
         }
 
+        // Rotina para limpar a matriz se não tiver fantasmas por perto
         if (!hasFantasm) {
             desenho_pio(animation[0], valor_led, pio, sm, 0, 1, 0);
         }
 
+        // Verificar se passou 1 segundo desde que a matriz de leds ficou verde
         uint32_t current_time = to_us_since_boot(get_absolute_time());
         if (current_time - fantasm_attack_delay >= 1000000 && fantasm_attacked) {
             fantasm_attacked = 0;
             playerAlive = 0;
         }
         } else {
+            if (fantasmPoints == 5) {
+                position = 10;
+                relative_position = 0;
+                gameOn = 0;
+                fantasmPoints = 0;
+                attack_animation = 0;
+                fantasm[0] = 120;
+                fantasm[1] = 205;
+                fantasm[2] = 280;
+                fantasm[3] = 380;
+                fantasm[4] = 460;
+            }
+
             ssd1306_fill(&ssd, !cor); // Limpa o display
             if (position != 10) {
                 printf("Jogo Pausado, pressione A para continuar\n");
@@ -280,6 +306,7 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
             gameOn = gameOn == 0 ? 1: 0;
 
         } else {
+            // Utiliza o botão do joystick para eliminar o fantasma
             if (current_time - fantasm_attack_delay >= 1000000) {
                 fantasm_attacked = 0;
                 playerAlive = 0;
@@ -290,6 +317,7 @@ static void gpio_irq_handler(uint gpio, uint32_t events) {
                 add_alarm_in_ms(200, alarm_callback, NULL, true);
                 printf("Fantasma derrotado, adicionado 1 ponto");
                 fantasmPoints++;
+                attack_animation = 8;
             } else {
                 playerAlive = 0;
             }

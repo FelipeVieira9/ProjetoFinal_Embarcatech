@@ -6,7 +6,7 @@ Foi desenvolvida uma aplicação que utiliza os periféricos da BitDogLab para i
 - Display OLED 128 x 64 I2C
 - Joystick analógico com botão
 
-## Contexto e como jogar.
+## Contexto e como jogar
 Nesse jogo, você é um caça fantasmas que foi contratado para exterminar fantasmas em um cemitério. Você possui uma arma que mostra a proximidade do fantasma na matriz de led, indo de parcialmente vermelho para totalmente vermelho e enfim para verde.
 
 Para jogar esse jogo, temos os seguintes pontos:
