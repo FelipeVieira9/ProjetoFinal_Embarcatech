@@ -122,6 +122,10 @@ int main()
     gpio_set_dir(SW_PIN, GPIO_IN);
     gpio_pull_up(SW_PIN);
 
+    gpio_init(btn_A);
+    gpio_set_dir(btn_A, GPIO_IN);
+    gpio_pull_up(btn_A);
+
     // Adicionado interrupções no botão A e no botão do joystick
     gpio_set_irq_enabled_with_callback(btn_A, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
     gpio_set_irq_enabled_with_callback(SW_PIN, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
